@@ -1,0 +1,52 @@
+name: Integration
+
+on:
+  push:
+    branches: [main, develop]
+    tags: ["v*"]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  integration:
+    name: Интеграционные тесты (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.11", "3.12"]
+    steps:
+      - name: Получить код
+        uses: actions/checkout@v4
+
+      - name: Установить Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Установить зависимости
+        run: python -m pip install -r requirements.txt
+
+      - name: Проверка стиля (flake8)
+        run: flake8 src tests
+
+      - name: Интеграционные и модульные тесты с замером покрытия
+        run: coverage run --source=src -m unittest discover -s tests -v
+
+      - name: Отчёт о покрытии (порог 85 %)
+        run: coverage report -m --fail-under=85
+
+      - name: Сквозная проверка (ввод -> JSON -> обработка -> вывод)
+        run: |
+          printf '3\n4\n1 0 2 5\n3 4 0 6\n7 8 9 1\n' \
+            | python src/matrsum.py --workdir exchange | tee result.txt
+          grep -q "Сумма элементов этих столбцов: 23.000" result.txt
+          test -f exchange/request.json && test -f exchange/response.json
+
+      - name: Сохранить файлы обмена
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: exchange-json-py${{ matrix.python-version }}
+          path: exchange/
+          if-no-files-found: ignore
