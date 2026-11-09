@@ -11,3 +11,8 @@ dist/
 venv/
 __pycache__/
 *.pyc
+
+# Файлы обмена между модулями и отчёты покрытия
+exchange/
+result.txt
+.coverage
