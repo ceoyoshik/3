@@ -20,7 +20,8 @@ import protocol
 from errors import (InputDataError, IntegrationError, ModuleTimeoutError,
                     ModuleUnavailableError)
 
-DEFAULT_TIMEOUT = 10.0
+DEFAULT_TIMEOUT = 5.0
+DEFAULT_ATTEMPTS = 2
 
 EXIT_SUCCESS = 0
 EXIT_DATA_ERROR = 1
@@ -53,7 +54,7 @@ def run_processing_subprocess(request_path, response_path, timeout,
 
 
 def integrate(data, workdir, timeout=DEFAULT_TIMEOUT,
-              runner=run_processing_subprocess):
+              attempts=DEFAULT_ATTEMPTS, runner=run_processing_subprocess):
     """Передаёт данные модулю обработки и возвращает OutputData.
 
     runner(request_path, response_path, timeout) — способ вызова модуля
@@ -63,7 +64,19 @@ def integrate(data, workdir, timeout=DEFAULT_TIMEOUT,
     response_path = os.path.join(workdir, "response.json")
     protocol.dump_json(request_path, mapping.input_to_request(data))
 
-    runner(request_path, response_path, timeout)
+    last_error = None
+    for _ in range(max(1, attempts)):
+        if os.path.exists(response_path):
+            os.remove(response_path)
+        try:
+            runner(request_path, response_path, timeout)
+            last_error = None
+            break
+        except (ModuleUnavailableError, ModuleTimeoutError) as exc:
+            last_error = exc
+    if last_error is not None:
+        raise last_error
+
     return mapping.response_to_output(protocol.load_json(response_path))
 
 
