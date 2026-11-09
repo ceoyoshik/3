@@ -189,6 +189,5 @@ class ExceptionTests(unittest.TestCase):
         self.assertIn("Ошибка интеграции", completed.stderr)
 
 
-
 if __name__ == "__main__":
     unittest.main()
