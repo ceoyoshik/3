@@ -20,7 +20,7 @@ import protocol
 from errors import (InputDataError, IntegrationError, ModuleTimeoutError,
                     ModuleUnavailableError)
 
-DEFAULT_TIMEOUT = 10.0
+DEFAULT_TIMEOUT = 30.0
 
 EXIT_SUCCESS = 0
 EXIT_DATA_ERROR = 1
